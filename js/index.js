@@ -1,162 +1,70 @@
-var app = app || {
-  onOrOff: false,
-  initializeVars: function(){
-    this.tempo = 1300;
-    this.count = 0;
-    this.numOfTurns = 0,
-    this.strict = false,
-    this.resp = false,
-    this.intervalLength = 7,
-    this.audio = undefined,
-    this.currentTimeoutId = undefined,
-    this.curCombo = [];
-  },
-  onOrOffClick: function(){
-    app.onOrOff = !app.onOrOff;
-    if(app.onOrOff){
-      $('h2').html('----');
-      $('#b3').removeClass('off').addClass('on');
-      $('.dbt').removeClass('no');
-    }
-    else {
-      clearTimeout(app.currentTimeoutId);
-      $('h2').html(' ');
-      $('#b3').removeClass('on').addClass('off');
-      $('#led').removeClass('on2').addClass('off2');
-      $('.dbt').addClass('no');
-      $('.dbt').removeClass('active');
-    }
-    app.initializeVars();
-  },
-  display: {
-    animate: function(counter){
-      var target, audio;
-      $('#t'+app.curCombo[counter]).addClass('active');
-      audio = document.getElementById('audio'+app.curCombo[counter]);
-      audio.play();
-      if(counter < app.curCombo.length){
-        setTimeout(function(){
-          target = document.getElementById('t'+app.curCombo[counter]);
-          target.className="dbt"; 
-          counter++;
-          app.gameEngine.animate(counter);
-        }, app.tempo);
-      }
-      app.resp = true;
-      app.gameEngine.startInterval();
-    },
-    mistake: function(){
-      app.count = 0;
-      document.getElementById('mistake').play();
-      $('h2').html('!!!!');
-      if (app.strict){ 
-        app.initializeVars();
-        app.gameEngine.newMove();
-      }
-      setTimeout(function(){
-        app.gameEngine.move();
-        app.gameEngine.startInterval();
-      }, app.tempo*2);
-    },
-    victory: function(){
-      document.getElementById('victory').play();
-      $('h2').text('WON!');
-      $('.dbt').addClass('active');
-      setTimeout(function(){
-        document.getElementsByClassName('dbt').className = 'dbt';
-      }, 5000);
-      app.initializeVars();
-      app.gameEngine.move();
-    }
-  },
-  gameEngine: {
-    randomNum: function(){
-      return Math.floor(Math.random() * (4));
-    },
-    startInterval: function(){
-        clearTimeout(app.currentTimeoutId);
-        app.currentTimeoutId = setTimeout(function(){
-          app.display.mistake();
-        }, app.intervalLength*1000);
-    },
-    newMove: function(){
-      if (app.curCombo.length === 20){
-        app.display.victory();
-      }
-      app.count = 0;
-      var cur = app.gameEngine.randomNum();
-      app.curCombo.push(cur);
-      app.numOfTurns++;
-      app.gameEngine.move();
-    },
-    move: function(){
-      var str = '';
-      if (app.numOfTurns < 10) str = '0';
-      $('h2').text(str+app.numOfTurns);
-      app.gameEngine.setValues();
-      app.display.animate(0);
-      app.gameEngine.startInterval();
-    },
-    setValues: function(){
-      if (app.curCombo.length >= 13){ 
-        app.intervalLength = 4;
-        app.tempo = 600;
-      }
-      else if(app.curCombo.length >= 9){ 
-        app.intervalLength = 5;
-        app.tempo = 800;
-      }
-      else if(app.curCombo.length >= 5){ 
-        app.intervalLength = 6;
-        app.tempo = 1000;
-      }
-      else{ 
-        app.intervalLength = 7;
-        app.tempo = 1200;
-      }
-    },
-    colorButton: function(event){
-      var audio, str = '';
-      app.gameEngine.startInterval();
-      if (app.resp){
-        str = event.target.id.slice(1);
-        audio = document.getElementById('audio'+str);
-        audio.play();
-        if (parseInt(str) === app.curCombo[app.count]){
-          app.count++;
-          if (app.count === app.curCombo.length) 
-            setTimeout(function(){
-              app.resp = false;
-              app.gameEngine.newMove();
-            }, app.tempo*2);
+var colors = ["brown", "chocolate", "crimson", "darkcyan", "darkgoldenrod", "gray", "darkseagreen", "deeppink"];
+var currentQuote, currentAuthor;
+
+function getRandomNum(num){
+  return Math.floor(Math.random()*num);
+}
+function openURL(url){
+  window.open(url, 'Share', 'width=550, height=400, toolbar=0, scrollbars=1 ,location=0 ,statusbar=0,menubar=0, resizable=0');
+}
+function getMyQuote(){
+ 
+ /* $.getJSON("https://crossorigin.me/https://quotesondesign.com/wp-json/posts?filter[orderby]=rand&filter[posts_per_page]=1&callback=", function(a) {
+  var randomNum = getRandomNum(a.length);
+        var post = a[randomNum]; // The data is an array of posts. Grab the first one.
+        currentQuote = post.content;
+        
+        randomNum %= colors.length;
+        $(".bgColor").css("background-color", colors[randomNum]);
+        $(".textColor").css("color", colors[randomNum]);
+        $('#quote').html(post.content);
+
+        // If the Source is available, use it. Otherwise hide it.
+        if (typeof post.custom_meta !== 'undefined' && typeof post.custom_meta.Source !== 'undefined') {
+          currentAuthor = post.custom_meta.Source;
+          $('#origin').html(post.custom_meta.Source);
+        } else {
+          $('#origin').text('anonymus');
+          currentAuthor = 'anonymus';
         }
-        else {
-          app.display.mistake();
+      });*/
+  $.ajax( {
+      url: 'https://quotesondesign.com/wp-json/posts?filter[orderby]=rand&filter[posts_per_page]=1',
+      success: function(data) {
+
+        var post = data.shift(); // The data is an array of posts. Grab the first one.
+        currentQuote = post.content.replace(/<p>/gi, "");
+        currentQuote = currentQuote.replace(/<\/p>/gi, "");
+        currentQuote = currentQuote.replace(/&#8217;/gi, "'"); 
+        var randomNum = getRandomNum(colors.length);
+        $(".bgColor").css("background-color", colors[randomNum]);
+        $("body").css("background-color", colors[randomNum]);
+        $(".textColor").css("color", colors[randomNum]);
+        $('#quote').html(post.content);
+        $("#origin").text(post.title);
+        currentAuthor = post.title;
+        $('#btn1').attr('href', 'https://twitter.com/intent/tweet?hashtags=quotes&related=freecodecamp&text=' + encodeURIComponent('"' + currentQuote + '" ' + currentAuthor));
+        // If the Source is available, use it. Otherwise hide it.
+        /*
+        if (typeof post.custom_meta !== 'undefined' && typeof post.custom_meta.Source !== 'undefined') {
+          var currentAuthor = post.custom_meta.Source;
+          $('#origin').html(post.custom_meta.Source);
+        } else {
+          $('#origin').text('anonymus');
+          var currentAuthor = 'anonymus';
         }
-      }
-    },
-  },
-};
+        */
+      },
+      cache: false
+    });
+   /*   
+  cache: false;*/
+}
+
 $(document).ready(function(){
-  $('#b3').on('click', function(){
-    app.onOrOffClick();
+  getMyQuote();
+  $("#btn2").on("click", getMyQuote);
+  $("#btn1").on("click", function(){
+    openURL('https://twitter.com/intent/tweet?hashtags=quotes&related=freecodecamp&text=' + encodeURIComponent('"' + currentQuote + '" ' + currentAuthor));
   });
-  $('#strict').on('click', function(){
-    if(app.onOrOff){ 
-      app.strict = !app.strict;
-      if(app.strict) $('#led').removeClass('off2').addClass('on2');
-      else $('#led').removeClass('on2').addClass('off2');
-    }
-  });
-  $('#start').on('click', function(){
-    debugger;
-    if(app.onOrOff) {
-      $('h2').text('00');
-      app.initializeVars();
-      app.gameEngine.newMove();
-    }
-  });
-  $('.dbt').on('click', function(event){
-    app.gameEngine.colorButton(event)
-  });
-})
+});
